@@ -13,26 +13,31 @@
       type="text/javascript"
       src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"
     ></script>
+    <script
+      language="javascript"
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/d3@7.3.0/dist/d3.min.js"
+    ></script>
 
     <style>
       canvas {
         display: inline-block;
         width: 1024px;
-        height: 1024px;
+        height: 720px;
         margin: auto;
       }
     </style>
   </head>
   <body>
-    <canvas width="1024" height="1024"></canvas>
+    <canvas width="1024" height="720"></canvas>
     <div id="position"></div>
 
     <script>
       // set up serial
       let serial = new p5.SerialPort();
       let portName;
+
       // set up canvas
-      const size = 1024;
       const canvas = document.querySelector("canvas");
       const ctx = canvas.getContext("2d");
 
@@ -49,7 +54,44 @@
         console.log(`port ${portName} open!`);
       });
 
+      // set up dimensions
+      const width = 1024;
+      const height = 720;
+      const wavelength = 360;
+      let hue = 240;
+      const padding = 20;
+      const xScale = d3.scaleLinear([0, 1024], [0, width]);
+      const yScale = d3.scaleLinear([0, 20], [height - padding, padding]);
+      const lineGen = d3.line().context(ctx).curve(d3.curveCatmullRom);
+
       serial.on("data", () => {
+        const data = serial.readLine();
+        if (!data) return;
+
+        const { time, sensor, button, turn } = JSON.parse(data);
+
+        if (button) {
+          ctx.clearRect(0, 0, width, height);
+        }
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.fillRect(0, 0, width, height);
+
+        const x = xScale((+time / 10) % 1024);
+        const y = yScale(+sensor);
+        hue += turn * 4;
+
+        ctx.beginPath();
+        lineGen([
+          [0, height / 2],
+          [Math.max(0, x - wavelength), height / 2],
+          [x, y],
+          [Math.min(x + wavelength, width), height / 2],
+          [width, height / 2],
+        ]);
+        ctx.strokeStyle = `hsl(${hue}, 75%, 75%)`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
       });
 
       serial.list();
