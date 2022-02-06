@@ -20,13 +20,14 @@ void setup() {
     Serial.println("oled setup failed");
     while (true);
   }
+  
+  oled.setTextSize(2);
+  oled.setTextColor(SSD1306_WHITE);
   Serial.println("oled is good to go");
 }
 
 void loop() {
   oled.clearDisplay();
-  oled.setTextSize(4);
-  oled.setTextColor(SSD1306_WHITE);
 
   oled.setCursor(0, 0);
   oled.print("secs:");
