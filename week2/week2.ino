@@ -22,6 +22,7 @@ const int TFT_DC = 8;
 // TFT screen size
 const int TFT_WIDTH = 240;
 const int TFT_HEIGHT = 240;
+const int TFT_TEXT_WIDTH = 140;
  
 // initialize the oled:
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -29,7 +30,7 @@ Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT);
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 // offscreen buffer for TFT which has a really slow refresh rate
-GFXcanvas1 canvas(80, 80);
+GFXcanvas1 canvas(TFT_WIDTH - TFT_TEXT_WIDTH, TFT_HEIGHT);
 
 // font colors
 int fontColor = 0x6677FF;  // light blue
@@ -59,25 +60,30 @@ void setup() {
   tft.fillScreen(bgColor);
   // set the text color to teal:
   tft.setTextColor(fontColor);
-  tft.setTextSize(4);
-  canvas.setTextSize(4);
+  tft.setTextSize(3);
+  canvas.setTextSize(3);
   
   // print unchanging text
   tft.setCursor(0, 30);
   tft.println("secs:");
+  tft.println("sensor:");
   
   Serial.println("oled is good to go");
   Serial.println("tft is good to go");
 }
 
 void loop() {
+  int sensorReading = analogRead(A0);
 
   // first display OLED
   oled.clearDisplay();
 
   oled.setCursor(0, 0);
   oled.print("secs:");
-  oled.print(millis() / 1000);
+  oled.println(millis() / 1000);
+  
+  oled.println("sensor:");
+  oled.println(sensorReading);
 
   oled.display();
 
@@ -90,8 +96,9 @@ void loop() {
   canvas.setCursor(0, 30);
   // print the seconds:
   canvas.println(millis() / 1000);
+  canvas.println(sensorReading);
   // update the tft with the canvas:
-  tft.drawBitmap(120, 0, canvas.getBuffer(),
+  tft.drawBitmap(TFT_TEXT_WIDTH, 0, canvas.getBuffer(),
                      canvas.width(), canvas.height(),
                      fontColor, bgColor);
 
