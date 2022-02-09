@@ -22,7 +22,6 @@ const int TFT_DC = 8;
 // TFT screen size
 const int TFT_WIDTH = 240;
 const int TFT_HEIGHT = 240;
-const int TFT_TEXT_WIDTH = 140;
  
 // initialize the oled:
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -30,10 +29,12 @@ Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT);
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 // offscreen buffer for TFT which has a really slow refresh rate
-GFXcanvas1 canvas(TFT_WIDTH - TFT_TEXT_WIDTH, TFT_HEIGHT);
+GFXcanvas1 canvas(TFT_WIDTH, TFT_HEIGHT);
 
 // font colors
 int fontColor = 0x6677FF;  // light blue
+int red = 0xFF0000;
+int green = 0x00FF00;
 int bgColor = 0x0;         // black
 
 void setup() {
