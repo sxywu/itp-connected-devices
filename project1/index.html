@@ -1,0 +1,137 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Playfair+Display:wght@700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+      body {
+        font-family: "Atkinson Hyperlegible";
+      }
+      #container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100vw;
+        text-align: center;
+        font-size: 24px;
+        line-height: 1.6;
+      }
+      .woman {
+        display: inline-block;
+        width: 400px;
+        padding: 60px;
+      }
+      .name {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+      .year {
+        font-size: 0.85em;
+        font-style: italic;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button id="connectButton" disabled>connect</button>
+    <div id="container"></div>
+
+    <script>
+      // DATA
+      let data = [];
+      let devices = [];
+      const connectButton = document.getElementById("connectButton");
+      let women;
+
+      const defaultOpacity = 0.1;
+      const defaultScale = 0.5;
+
+      // BLUETOOTH
+      const serviceUuid = "e92ad644-1000-4089-a166-718422c49e41";
+      const remoteUuid = "e92ad644-0001-4089-a166-718422c49e41";
+      const localUuid = "e92ad644-0002-4089-a166-718422c49e41";
+
+      async function onConnect() {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [serviceUuid] }],
+          // acceptAllDevices: true,
+        });
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(serviceUuid);
+        const localCharacteristic = await service.getCharacteristic(localUuid);
+        const remoteCharacteristic = await service.getCharacteristic(
+          remoteUuid
+        );
+        // store device info
+        const index = devices.length;
+        devices[index] = { device, localCharacteristic, remoteCharacteristic };
+
+        // get notifications for LED
+        await localCharacteristic.startNotifications();
+        // handle notifications
+        localCharacteristic.addEventListener(
+          "characteristicvaluechanged",
+          (event) => {
+            handleNotification(index, event.target.value.getUint8(0));
+          }
+        );
+
+        // if all devices connected, hide connect button
+        if (devices.length == data.length) {
+          connectButton.style.display = "none";
+        }
+      }
+      async function handleNotification(index, value) {
+        const other = (index + 1) % data.length;
+        // increase opacity (this is not the proper d3 way but it's late and i'm tired)
+        d3.select(women.nodes()[index])
+          .transition()
+          .duration(1000)
+          .style("opacity", value ? 1 : defaultOpacity);
+
+        // and notify the other device
+        await devices[other].remoteCharacteristic.writeValue(
+          Uint8Array.of(value)
+        );
+      }
+
+      // GET DATA
+      d3.csv("./data.csv").then((original) => {
+        data = original;
+
+        women = d3
+          .select("#container")
+          .selectAll("div")
+          .data(data)
+          .join("div")
+          .attr("class", "woman")
+          .style("opacity", defaultOpacity);
+        women
+          .append("div")
+          .attr("class", "name")
+          .text((d) => d.name);
+        women
+          .append("div")
+          .attr("class", "year")
+          .text((d) => d.year);
+        women
+          .append("div")
+          .attr("class", "summary")
+          .text((d) => d.summary);
+
+        connectButton.disabled = false;
+        connectButton.addEventListener("click", onConnect);
+      });
+    </script>
+  </body>
+</html>
